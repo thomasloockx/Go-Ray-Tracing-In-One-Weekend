@@ -8,8 +8,8 @@ type Vec3 struct {
     X, Y, Z float64
 }
 
-func (v *Vec3) Negate() Vec3 {
-    return Vec3{-v.X, -v.Y, -v.Z}
+func (v *Vec3) Negate() *Vec3 {
+    return &Vec3{-v.X, -v.Y, -v.Z}
 }
 
 func (v *Vec3) Length() float64 {

@@ -7,29 +7,16 @@ import (
     "os"
 )
 
-const IMAGE_WIDTH = 256
-const IMAGE_HEIGHT = 256
-
-func hitSphere(center *cgm.Vec3, radius float64, ray *cgm.Ray) float64 {
-    oc := ray.Orig.Sub(center)    
-    a := ray.Dir.LengthSquared()
-    halfB := oc.Dot(&ray.Dir)
-    c := oc.LengthSquared() - radius * radius
-    discriminant := halfB * halfB - a * c
-    if discriminant < 0 {
-        return -1
+func rayColor(r *cgm.Ray, world cgm.Hittable) *cgm.Color {
+    var rec cgm.HitRecord
+    if world.Hit(r, 0, math.Inf(1), &rec) {
+        n := rec.Normal
+        return (&cgm.Color{R: n.X + 1, G: n.Y + 1, B: n.Z + 1}).Scale(0.5)
     }
-    return (-halfB - math.Sqrt(discriminant)) / a
-}
 
-func rayColor(r *cgm.Ray) *cgm.Color {
-    t := hitSphere(&cgm.Vec3{0, 0, -1}, 0.5, r)
-    if t > 0.0 {
-        n := r.At(t).Sub(&cgm.Vec3{0, 0, -1}).UnitVector()
-        return (&cgm.Color{n.X + 1, n.Y + 1, n.Z + 1}).Scale(0.5)
-    }
+    // Return the sky color.
     unitDir := r.Dir.UnitVector()
-    t = 0.5 * (unitDir.Y + 1.0)
+    t := 0.5 * (unitDir.Y + 1.0)
     white := &cgm.Color{R: 1.0, G: 1.0, B: 1.0}
     blue := &cgm.Color{R: 0.5, G: 0.7, B: 1.0}
     return white.Lerp(blue, t)
@@ -41,6 +28,13 @@ func main() {
     aspectRatio := 16.0 / 9.0
     imageWidth := 400 
     imageHeight := int(float64(imageWidth) / aspectRatio)
+
+    // World
+    world := cgm.HittableList{}
+    s1 := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5}
+    s2 := &cgm.Sphere{Center: cgm.Vec3{0, -100.5, -1}, Radius: 100}
+    world.Add(s1)
+    world.Add(s2)
 
     // Camera
     viewPortHeight := 2.0
@@ -66,7 +60,7 @@ func main() {
                 Orig: *origin, 
                 Dir: *(lowerLeftCorner.Add(horizontal.Scale(u)).Add(vertical.Scale(v)).Sub(origin)),
             }
-            c := rayColor(r)
+            c := rayColor(r, &world)
             cgm.WriteColor(os.Stdout, c)
         }
     }
