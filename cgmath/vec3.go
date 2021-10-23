@@ -55,3 +55,32 @@ func (v *Vec3) Cross(w *Vec3) *Vec3 {
 func (v *Vec3) UnitVector() *Vec3 {
     return v.Div(v.Length())
 }
+
+func Random() *Vec3 {
+    return &Vec3{Rand(), Rand(), Rand()}
+}
+
+func RandomInRange(min, max float64) *Vec3 {
+    return &Vec3{RandInRange(min, max), RandInRange(min, max), RandInRange(min, max)}
+}
+
+func RandomInUnitSphere() *Vec3 {
+    for {
+        p := RandomInRange(-1.0, 1.0)
+        if (p.LengthSquared() < 1) {
+            return p
+        }
+    }
+}
+
+func RandomUnitVector() *Vec3 {
+    return RandomInUnitSphere().UnitVector()
+}
+
+func RandomInHemisphere(normal *Vec3) *Vec3 {
+    inUnitSphere := RandomInUnitSphere()
+    if inUnitSphere.Dot(normal) > 0.0 {
+        return inUnitSphere
+    }
+    return inUnitSphere.Negate()
+}

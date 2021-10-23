@@ -3,6 +3,7 @@ package cgmath
 import (
     "fmt"
     "io"
+    "math"
 )
 
 type Color struct {
@@ -28,11 +29,11 @@ func (c *Color) Accumulate(d *Color) {
 }
 
 func WriteColor(w io.Writer, c *Color, samplesPerPixel int) {
-    r, g, b := c.R, c.G, c.B
+    // Divide the color by the number of samples and gamma-correct for gamma=2.0
     scale := 1.0 / float64(samplesPerPixel)
-    r *= scale
-    g *= scale
-    b *= scale
+    r := math.Sqrt(c.R * scale)
+    g := math.Sqrt(c.G * scale)
+    b := math.Sqrt(c.B * scale)
 
 
     fmt.Fprintf(w, "%d %d %d\n", 

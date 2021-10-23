@@ -7,11 +7,25 @@ import (
     "os"
 )
 
-func rayColor(r *cgm.Ray, world cgm.Hittable) *cgm.Color {
+// Avoid self intersection (shadow acne) by offsetting the ray position.
+const RAY_EPSILON = 0.001
+
+
+func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
+    // If we exceeded the ray bounce limit, no more light is gathered.
+    if depth <= 0 {
+        return &cgm.Color{R: 0, G: 0, B: 0}
+    }
+
     var rec cgm.HitRecord
-    if world.Hit(r, 0, math.Inf(1), &rec) {
-        n := rec.Normal
-        return (&cgm.Color{R: n.X + 1, G: n.Y + 1, B: n.Z + 1}).Scale(0.5)
+    if world.Hit(r, RAY_EPSILON, math.Inf(1), &rec) {
+        target := rec.P.Add(&rec.Normal).Add(cgm.RandomInHemisphere(&rec.Normal))
+        newRay := cgm.Ray{
+            Orig: rec.P,
+            Dir: *target.Sub(&rec.P),
+        }
+        // Gray
+        return rayColor(&newRay, world, depth - 1).Scale(0.5)
     }
 
     // Return the sky color.
@@ -29,6 +43,7 @@ func main() {
     imageWidth := 400 
     imageHeight := int(float64(imageWidth) / aspectRatio)
     samplesPerPixel := 100
+    maxDepth := 50
 
     // World
     world := cgm.HittableList{}
@@ -53,7 +68,7 @@ func main() {
                 u := (float64(i) + cgm.Rand()) / float64(imageWidth - 1)
                 v := (float64(j) + cgm.Rand()) / float64(imageHeight - 1)
                 r := cam.MakeRay(u, v)
-                pixelColor.Accumulate(rayColor(&r, &world))
+                pixelColor.Accumulate(rayColor(&r, &world, maxDepth))
             }
             cgm.WriteColor(os.Stdout, &pixelColor, samplesPerPixel)
         }
