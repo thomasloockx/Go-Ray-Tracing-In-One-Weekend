@@ -28,6 +28,7 @@ func main() {
     aspectRatio := 16.0 / 9.0
     imageWidth := 400 
     imageHeight := int(float64(imageWidth) / aspectRatio)
+    samplesPerPixel := 100
 
     // World
     world := cgm.HittableList{}
@@ -37,14 +38,7 @@ func main() {
     world.Add(s2)
 
     // Camera
-    viewPortHeight := 2.0
-    viewPortWidth := aspectRatio * viewPortHeight
-    focalLength := 1.0
-
-    origin := &cgm.Vec3{X: 0, Y: 0, Z: 0}
-    horizontal := &cgm.Vec3{X: viewPortWidth, Y: 0, Z: 0}
-    vertical := &cgm.Vec3{X: 0, Y: viewPortHeight, Z: 0}
-    lowerLeftCorner := origin.Sub(horizontal.Div(2.0)).Sub(vertical.Div(2.0)).Sub(&cgm.Vec3{X: 0, Y: 0, Z: focalLength})
+    cam := cgm.MakeCamera()
 
     // Render
     fmt.Printf("P3\n") 
@@ -54,14 +48,14 @@ func main() {
     for j := imageHeight - 1; j >= 0; j-- {
         fmt.Fprintf(os.Stderr, "\rScanlines remaining: %d", j)
         for i := 0; i < imageWidth; i++ {
-            u := float64(i) / float64(imageWidth - 1)
-            v := float64(j) / float64(imageHeight - 1)
-            r := &cgm.Ray{
-                Orig: *origin, 
-                Dir: *(lowerLeftCorner.Add(horizontal.Scale(u)).Add(vertical.Scale(v)).Sub(origin)),
+            pixelColor := cgm.Color{}
+            for s := 0; s < samplesPerPixel; s++ {
+                u := (float64(i) + cgm.Rand()) / float64(imageWidth - 1)
+                v := (float64(j) + cgm.Rand()) / float64(imageHeight - 1)
+                r := cam.MakeRay(u, v)
+                pixelColor.Accumulate(rayColor(&r, &world))
             }
-            c := rayColor(r, &world)
-            cgm.WriteColor(os.Stdout, c)
+            cgm.WriteColor(os.Stdout, &pixelColor, samplesPerPixel)
         }
     }
     fmt.Fprintf(os.Stderr, "\nDone.\n")
