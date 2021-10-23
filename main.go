@@ -12,14 +12,14 @@ const IMAGE_HEIGHT = 256
 
 func hitSphere(center *cgm.Vec3, radius float64, ray *cgm.Ray) float64 {
     oc := ray.Orig.Sub(center)    
-    a := ray.Dir.Dot(&ray.Dir)
-    b := 2.0 * oc.Dot(&ray.Dir)
-    c := oc.Dot(oc) - radius * radius
-    discriminant := b * b - 4 * a * c
+    a := ray.Dir.LengthSquared()
+    halfB := oc.Dot(&ray.Dir)
+    c := oc.LengthSquared() - radius * radius
+    discriminant := halfB * halfB - a * c
     if discriminant < 0 {
         return -1
     }
-    return (-b - math.Sqrt(discriminant)) / (2.0 * a)
+    return (-halfB - math.Sqrt(discriminant)) / a
 }
 
 func rayColor(r *cgm.Ray) *cgm.Color {
