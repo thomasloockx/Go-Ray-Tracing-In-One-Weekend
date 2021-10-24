@@ -10,7 +10,6 @@ import (
 // Avoid self intersection (shadow acne) by offsetting the ray position.
 const RAY_EPSILON = 0.001
 
-
 func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
     // If we exceeded the ray bounce limit, no more light is gathered.
     if depth <= 0 {
@@ -19,13 +18,13 @@ func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
 
     var rec cgm.HitRecord
     if world.Hit(r, RAY_EPSILON, math.Inf(1), &rec) {
-        target := rec.P.Add(&rec.Normal).Add(cgm.RandomInHemisphere(&rec.Normal))
-        newRay := cgm.Ray{
-            Orig: rec.P,
-            Dir: *target.Sub(&rec.P),
+        var scattered cgm.Ray
+        var attenuation cgm.Color
+        if rec.Material.Scatter(r, &rec, &attenuation, &scattered) {
+            return attenuation.Mul(rayColor(&scattered, world, depth - 1))
         }
-        // Gray
-        return rayColor(&newRay, world, depth - 1).Scale(0.5)
+
+        return &cgm.Color{R: 0, G: 0, B: 0}
     }
 
     // Return the sky color.
@@ -47,10 +46,18 @@ func main() {
 
     // World
     world := cgm.HittableList{}
-    s1 := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5}
-    s2 := &cgm.Sphere{Center: cgm.Vec3{0, -100.5, -1}, Radius: 100}
-    world.Add(s1)
-    world.Add(s2)
+    materialGround := cgm.Lambertian{Albedo: cgm.Color{0.8, 0.8, 0.0}}
+    materialCenter := cgm.Lambertian{Albedo: cgm.Color{0.7, 0.3, 0.3}}
+    materialLeft := cgm.Metal{Albedo: cgm.Color{0.8, 0.8, 0.8}}
+    materialRight := cgm.Metal{Albedo: cgm.Color{0.8, 0.6, 0.2}}
+    ground := &cgm.Sphere{Center: cgm.Vec3{0, -100.5, -1}, Radius: 100, Material: &materialGround}
+    centerSphere := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5, Material: &materialCenter}
+    leftSphere := &cgm.Sphere{Center: cgm.Vec3{-1, 0, -1}, Radius: 0.5, Material: &materialLeft}
+    rightSphere := &cgm.Sphere{Center: cgm.Vec3{1, 0, -1}, Radius: 0.5, Material: &materialRight}
+    world.Add(ground)
+    world.Add(centerSphere)
+    world.Add(leftSphere)
+    world.Add(rightSphere)
 
     // Camera
     cam := cgm.MakeCamera()

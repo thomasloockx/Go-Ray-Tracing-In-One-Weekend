@@ -84,3 +84,12 @@ func RandomInHemisphere(normal *Vec3) *Vec3 {
     }
     return inUnitSphere.Negate()
 }
+
+func (v *Vec3) NearZero() bool {
+    s := 1e-8
+    return math.Abs(v.X) < s && math.Abs(v.Y) < s && math.Abs(v.Z) < s
+}
+
+func Reflect(v, n *Vec3) *Vec3 {
+    return v.Sub(n.Scale(2 * v.Dot(n)))
+}

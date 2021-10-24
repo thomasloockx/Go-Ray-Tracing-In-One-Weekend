@@ -22,6 +22,10 @@ func (c *Color) Scale(t float64) *Color {
     return &Color{c.R * t, c.G * t, c.B * t}
 }
 
+func (c *Color) Mul(d *Color) *Color {
+    return &Color{c.R * d.R, c.G * d.G, c.B * d.B}
+}
+
 func (c *Color) Accumulate(d *Color) {
     c.R += d.R
     c.G += d.G
