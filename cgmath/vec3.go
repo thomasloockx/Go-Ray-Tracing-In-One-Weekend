@@ -93,3 +93,10 @@ func (v *Vec3) NearZero() bool {
 func Reflect(v, n *Vec3) *Vec3 {
     return v.Sub(n.Scale(2 * v.Dot(n)))
 }
+
+func Refract(uv *Vec3, n *Vec3, etaiOverEtat float64) *Vec3 {
+    cosTheta := math.Min(-uv.Dot(n), 1.0)
+    rOutPerp := uv.Add(n.Scale(cosTheta)).Scale(etaiOverEtat)
+    rOutParallel := n.Scale(-math.Sqrt(math.Abs(1.0 - rOutPerp.LengthSquared())))
+    return rOutPerp.Add(rOutParallel)
+}
