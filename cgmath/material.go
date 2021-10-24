@@ -46,8 +46,20 @@ func (mat *Dielectric) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
     if rec.FrontFace {
         refractionRatio = 1.0 / mat.RefractiveIndex
     }
+
     unitDirection := rayIn.Dir.UnitVector()
-    refracted := Refract(unitDirection, &rec.Normal, refractionRatio)
-    *scattered = Ray{Orig: rec.P, Dir: *refracted}
+    cosTheta := math.Min(-unitDirection.Dot(&rec.Normal), 1.0)
+    sinTheta := math.Sqrt(1.0 - cosTheta * cosTheta)
+
+    cannotRefract := refractionRatio * sinTheta > 1.0
+
+    var direction *Vec3
+    if cannotRefract {
+        direction = Reflect(unitDirection, &rec.Normal)
+    } else {
+        direction = Refract(unitDirection, &rec.Normal, refractionRatio)
+    }
+
+    *scattered = Ray{Orig: rec.P, Dir: *direction}
     return true
 }

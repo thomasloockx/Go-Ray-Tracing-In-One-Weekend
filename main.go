@@ -46,11 +46,11 @@ func main() {
 
     // World
     world := cgm.HittableList{}
-    materialGround := cgm.Lambertian{Albedo: cgm.Color{0.8, 0.8, 0.0}}
+    materialGround := cgm.Lambertian{Albedo: cgm.Color{R: 0.8, G: 0.8, B: 0.0}}
     materialLeft := cgm.Dielectric{RefractiveIndex: 1.5}
     materialCenter := cgm.Dielectric{RefractiveIndex: 1.5}
-    materialRight := cgm.Metal{Albedo: cgm.Color{0.8, 0.6, 0.2}, Fuzz: 1.0}
-    ground := &cgm.Sphere{Center: cgm.Vec3{0, -100.5, -1}, Radius: 100, Material: &materialGround}
+    materialRight := cgm.Metal{Albedo: cgm.Color{R: 0.8, G: 0.6, B: 0.2}, Fuzz: 1.0}
+    ground := &cgm.Sphere{Center: cgm.Vec3{X: 0, Y: -100.5, Z: -1}, Radius: 100, Material: &materialGround}
     centerSphere := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5, Material: &materialCenter}
     leftSphere := &cgm.Sphere{Center: cgm.Vec3{-1, 0, -1}, Radius: 0.5, Material: &materialLeft}
     rightSphere := &cgm.Sphere{Center: cgm.Vec3{1, 0, -1}, Radius: 0.5, Material: &materialRight}

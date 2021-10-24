@@ -14,8 +14,8 @@ type HitRecord struct {
 
 // Set the normal so that it always points opposite the incident ray.
 func (h *HitRecord) SetFaceNormal(r *Ray, outwardNormal *Vec3) {
-    frontFace := r.Dir.Dot(outwardNormal) < 0
-    if frontFace {
+    h.FrontFace = r.Dir.Dot(outwardNormal) < 0
+    if h.FrontFace {
         h.Normal = *outwardNormal
     } else {
         h.Normal = *outwardNormal.Negate()
