@@ -10,6 +10,51 @@ import (
 // Avoid self intersection (shadow acne) by offsetting the ray position.
 const RAY_EPSILON = 0.001
 
+func randomScene() cgm.HittableList {
+	world := cgm.HittableList{}
+
+    groundMaterial := cgm.Lambertian{Albedo: cgm.Color{0.5, 0.5, 0.5}}
+    world.Add(&cgm.Sphere{cgm.Vec3{0, -1000, 0}, 1000, &groundMaterial})
+
+    for a := -11; a < 11; a++ {
+        for b := -11; b < 11; b++ {
+			chooseMat := cgm.Rand()
+            center := cgm.Vec3{float64(a) + 0.9 * cgm.Rand(), 0.2, float64(b) + 0.9 * cgm.Rand()}
+
+            if center.Sub(&cgm.Vec3{4, 0.2, 0}).Length() > 0.9 {
+                var sphereMaterial cgm.Material
+
+                if chooseMat < 0.8 {
+                    // diffuse
+                    albedo := cgm.Color{R: cgm.Rand() * cgm.Rand(), G: cgm.Rand() * cgm.Rand(), B: cgm.Rand() * cgm.Rand()}
+                    sphereMaterial = &cgm.Lambertian{Albedo: albedo}
+                } else if chooseMat < 0.95 {
+                    // metal
+					x := cgm.RandInRange(0.5, 1)
+                    albedo := cgm.Color{x, x, x}
+                    fuzz := cgm.RandInRange(0, 0.5)
+                    sphereMaterial = &cgm.Metal{Albedo: albedo, Fuzz: fuzz}
+                } else {
+                    // glass
+                    sphereMaterial = &cgm.Dielectric{RefractiveIndex: 1.5}
+                }
+				world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
+            }
+        }
+    }
+
+    material1 := cgm.Dielectric{RefractiveIndex: 1.5}
+    world.Add(&cgm.Sphere{cgm.Vec3{0, 1, 0}, 1.0, &material1})
+
+    material2 := cgm.Lambertian{cgm.Color{0.4, 0.2, 0.1}}
+    world.Add(&cgm.Sphere{cgm.Vec3{-4, 1, 0}, 1.0, &material2})
+
+    material3 := cgm.Metal{cgm.Color{0.7, 0.6, 0.5}, 0.0}
+    world.Add(&cgm.Sphere{cgm.Vec3{4, 1, 0}, 1.0, &material3})
+
+    return world
+}
+
 func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
     // If we exceeded the ray bounce limit, no more light is gathered.
     if depth <= 0 {
@@ -38,33 +83,21 @@ func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
 
 func main() {
     // Image
-    aspectRatio := 16.0 / 9.0
-    imageWidth := 400 
+    aspectRatio := 3.0 / 2.0
+    imageWidth := 1200
     imageHeight := int(float64(imageWidth) / aspectRatio)
-    samplesPerPixel := 100
+    samplesPerPixel := 500
     maxDepth := 50
 
     // World
-    world := cgm.HittableList{}
-    materialGround := cgm.Lambertian{Albedo: cgm.Color{R: 0.8, G: 0.8, B: 0.0}}
-    materialLeft := cgm.Dielectric{RefractiveIndex: 1.5}
-    materialCenter := cgm.Lambertian{cgm.Color{0.1, 0.2, 0.5}}
-    materialRight := cgm.Metal{Albedo: cgm.Color{R: 0.8, G: 0.6, B: 0.2}, Fuzz: 0.0}
-    ground := &cgm.Sphere{Center: cgm.Vec3{X: 0, Y: -100.5, Z: -1}, Radius: 100, Material: &materialGround}
-    centerSphere := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5, Material: &materialCenter}
-    leftSphere := &cgm.Sphere{Center: cgm.Vec3{-1, 0, -1}, Radius: 0.4, Material: &materialLeft}
-    rightSphere := &cgm.Sphere{Center: cgm.Vec3{1, 0, -1}, Radius: 0.5, Material: &materialRight}
-    world.Add(ground)
-    world.Add(centerSphere)
-    world.Add(leftSphere)
-    world.Add(rightSphere)
+    world := randomScene()
 
     // Camera
-    lookFrom := cgm.Vec3{X: 3, Y: 3, Z: 2}
+    lookFrom := cgm.Vec3{X: 13, Y: 2, Z: 3}
     lookAt := cgm.Vec3{X: 0, Y: 0, Z: -1}
     vUp := cgm.Vec3{X: 0, Y: 1, Z: 0}
-    distToFocus := lookFrom.Sub(&lookAt).Length()
-    aperture := 2.0
+    distToFocus := 10.0
+    aperture := 0.1
     fov := 20.0
     cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, fov, aspectRatio, aperture, distToFocus)
 
