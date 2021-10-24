@@ -54,7 +54,7 @@ func (mat *Dielectric) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
     cannotRefract := refractionRatio * sinTheta > 1.0
 
     var direction *Vec3
-    if cannotRefract {
+    if cannotRefract || reflectance(cosTheta, refractionRatio) > Rand() {
         direction = Reflect(unitDirection, &rec.Normal)
     } else {
         direction = Refract(unitDirection, &rec.Normal, refractionRatio)
@@ -62,4 +62,11 @@ func (mat *Dielectric) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
 
     *scattered = Ray{Orig: rec.P, Dir: *direction}
     return true
+}
+
+// Schlick approximation of Fresnel equations.
+func reflectance(cosine, refractiveIdx float64) float64 {
+    r0 := (1 - refractiveIdx) / (1 + refractiveIdx)
+    r0 = r0 * r0
+    return r0 + (1 - r0) * math.Pow(1 - cosine, 5)
 }

@@ -77,6 +77,15 @@ func RandomUnitVector() *Vec3 {
     return RandomInUnitSphere().UnitVector()
 }
 
+func RandomInUnitDisk() *Vec3 {
+    for {
+        p := Vec3{RandInRange(-1, 1), RandInRange(-1, 1), 0}
+        if p.LengthSquared() < 1 {
+            return &p
+        }
+    }
+}
+
 func RandomInHemisphere(normal *Vec3) *Vec3 {
     inUnitSphere := RandomInUnitSphere()
     if inUnitSphere.Dot(normal) > 0.0 {

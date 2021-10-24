@@ -48,11 +48,11 @@ func main() {
     world := cgm.HittableList{}
     materialGround := cgm.Lambertian{Albedo: cgm.Color{R: 0.8, G: 0.8, B: 0.0}}
     materialLeft := cgm.Dielectric{RefractiveIndex: 1.5}
-    materialCenter := cgm.Dielectric{RefractiveIndex: 1.5}
-    materialRight := cgm.Metal{Albedo: cgm.Color{R: 0.8, G: 0.6, B: 0.2}, Fuzz: 1.0}
+    materialCenter := cgm.Lambertian{cgm.Color{0.1, 0.2, 0.5}}
+    materialRight := cgm.Metal{Albedo: cgm.Color{R: 0.8, G: 0.6, B: 0.2}, Fuzz: 0.0}
     ground := &cgm.Sphere{Center: cgm.Vec3{X: 0, Y: -100.5, Z: -1}, Radius: 100, Material: &materialGround}
     centerSphere := &cgm.Sphere{Center: cgm.Vec3{0, 0, -1}, Radius: 0.5, Material: &materialCenter}
-    leftSphere := &cgm.Sphere{Center: cgm.Vec3{-1, 0, -1}, Radius: 0.5, Material: &materialLeft}
+    leftSphere := &cgm.Sphere{Center: cgm.Vec3{-1, 0, -1}, Radius: 0.4, Material: &materialLeft}
     rightSphere := &cgm.Sphere{Center: cgm.Vec3{1, 0, -1}, Radius: 0.5, Material: &materialRight}
     world.Add(ground)
     world.Add(centerSphere)
@@ -60,7 +60,13 @@ func main() {
     world.Add(rightSphere)
 
     // Camera
-    cam := cgm.MakeCamera()
+    lookFrom := cgm.Vec3{X: 3, Y: 3, Z: 2}
+    lookAt := cgm.Vec3{X: 0, Y: 0, Z: -1}
+    vUp := cgm.Vec3{X: 0, Y: 1, Z: 0}
+    distToFocus := lookFrom.Sub(&lookAt).Length()
+    aperture := 2.0
+    fov := 20.0
+    cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, fov, aspectRatio, aperture, distToFocus)
 
     // Render
     fmt.Printf("P3\n") 
