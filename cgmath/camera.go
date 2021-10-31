@@ -11,9 +11,11 @@ type Camera struct {
     vertical Vec3
     u, v, w Vec3
     lensRadius float64
+    time0, time1 float64
 }
 
-func MakeCamera(lookFrom *Vec3, lookAt *Vec3, vUp *Vec3, vFov float64, aspectRatio float64, aperture float64, focusDist float64) Camera {
+func MakeCamera(lookFrom *Vec3, lookAt *Vec3, vUp *Vec3, vFov float64, aspectRatio float64, aperture float64, focusDist float64,
+    time0 float64, time1 float64) Camera {
     cam := Camera{}
 
     theta := DegToRad(vFov)
@@ -34,6 +36,9 @@ func MakeCamera(lookFrom *Vec3, lookAt *Vec3, vUp *Vec3, vFov float64, aspectRat
     cam.v = *v
     cam.w = *w
 
+    cam.time0 = time0
+    cam.time1 = time1
+
     return cam
 }
 
@@ -44,5 +49,6 @@ func (c *Camera) MakeRay(u, v float64) Ray {
     return Ray{
         Orig: *c.origin.Add(offset),
         Dir: *(c.lowerLeftCorner.Add(c.horizontal.Scale(u)).Add(c.vertical.Scale(v)).Sub(&c.origin).Sub(offset)),
+        Time: RandInRange(c.time0, c.time1),
     }
 }

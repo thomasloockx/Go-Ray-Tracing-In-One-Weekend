@@ -88,3 +88,45 @@ func (hl *HittableList) Hit(r *Ray, tMin float64, tMax float64, h *HitRecord) bo
 
     return hitAnything
 }
+
+type MovingSphere struct {
+    Center0, Center1 Vec3
+    Time0, Time1 float64
+    Radius float64
+    Material Material
+}
+
+func (s *MovingSphere) Center(time float64) *Vec3 {
+    frac := (time - s.Time0) / (s.Time1 - s.Time0)
+    return s.Center0.Add(s.Center1.Sub(&s.Center0).Scale(frac))
+}
+
+func (s *MovingSphere) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    sCenter := s.Center(r.Time)
+    oc := r.Orig.Sub(sCenter)
+    a := r.Dir.LengthSquared()
+    halfB := oc.Dot(&r.Dir)
+    c := oc.LengthSquared() - s.Radius * s.Radius
+
+    discriminant := halfB * halfB - a * c
+    if discriminant < 0.0 {
+        return false
+    }
+
+    sqrtd := math.Sqrt(discriminant)
+
+    root := (-halfB - sqrtd) / a
+    if (root < tMin || tMax < root) {
+        root = (-halfB + sqrtd) / a
+        if (root < tMin || tMax < root) {
+            return false
+        }
+    }
+
+    rec.T = root
+    rec.P = *r.At(rec.T)
+    outwardNormal := rec.P.Sub(sCenter).Div(s.Radius)
+    rec.SetFaceNormal(r, outwardNormal)
+    rec.Material = s.Material
+    return true
+}

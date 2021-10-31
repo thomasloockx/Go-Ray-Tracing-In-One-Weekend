@@ -17,7 +17,7 @@ func (mat *Lambertian) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
     if scatterDir.NearZero() {
         scatterDir = &rec.Normal
     }
-    *scattered = Ray{Orig: rec.P, Dir: *scatterDir}
+    *scattered = Ray{Orig: rec.P, Dir: *scatterDir, Time: rayIn.Time}
     *attenuation = mat.Albedo
     return true
 }
@@ -31,7 +31,7 @@ func (mat *Metal) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, scatte
     fuzz := math.Min(mat.Fuzz, 1.0)
     reflected := Reflect(rayIn.Dir.UnitVector(), &rec.Normal)
     reflected = reflected.Add(RandomInUnitSphere().Scale(fuzz))
-    *scattered = Ray{Orig: rec.P, Dir: *reflected}
+    *scattered = Ray{Orig: rec.P, Dir: *reflected, Time: rayIn.Time}
     *attenuation = mat.Albedo
     return scattered.Dir.Dot(&rec.Normal) > 0
 }
@@ -60,7 +60,7 @@ func (mat *Dielectric) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
         direction = Refract(unitDirection, &rec.Normal, refractionRatio)
     }
 
-    *scattered = Ray{Orig: rec.P, Dir: *direction}
+    *scattered = Ray{Orig: rec.P, Dir: *direction, Time: rayIn.Time}
     return true
 }
 

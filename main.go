@@ -28,17 +28,28 @@ func randomScene() cgm.HittableList {
                     // diffuse
                     albedo := cgm.Color{R: cgm.Rand() * cgm.Rand(), G: cgm.Rand() * cgm.Rand(), B: cgm.Rand() * cgm.Rand()}
                     sphereMaterial = &cgm.Lambertian{Albedo: albedo}
+                    center2 := center.Add(&cgm.Vec3{0.0, cgm.RandInRange(0, 0.5), 0})
+                    sphere := &cgm.MovingSphere{
+                        Center0: center,
+                        Center1: *center2,
+                        Time0: 0.0,
+                        Time1: 1.0,
+                        Radius: 0.2,
+                        Material: sphereMaterial,
+                    }
+                    world.Add(sphere)
                 } else if chooseMat < 0.95 {
                     // metal
 					x := cgm.RandInRange(0.5, 1)
                     albedo := cgm.Color{x, x, x}
                     fuzz := cgm.RandInRange(0, 0.5)
                     sphereMaterial = &cgm.Metal{Albedo: albedo, Fuzz: fuzz}
+				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
                 } else {
                     // glass
                     sphereMaterial = &cgm.Dielectric{RefractiveIndex: 1.5}
+				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
                 }
-				world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
             }
         }
     }
@@ -83,10 +94,10 @@ func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
 
 func main() {
     // Image
-    aspectRatio := 3.0 / 2.0
-    imageWidth := 1200
+    aspectRatio := 16.0 / 9.0
+    imageWidth := 400
     imageHeight := int(float64(imageWidth) / aspectRatio)
-    samplesPerPixel := 500
+    samplesPerPixel := 100
     maxDepth := 50
 
     // World
@@ -99,7 +110,7 @@ func main() {
     distToFocus := 10.0
     aperture := 0.1
     fov := 20.0
-    cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, fov, aspectRatio, aperture, distToFocus)
+    cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, fov, aspectRatio, aperture, distToFocus, 0.0, 1.0)
 
     // Render
     fmt.Printf("P3\n") 
