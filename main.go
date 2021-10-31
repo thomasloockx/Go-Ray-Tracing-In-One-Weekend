@@ -5,6 +5,7 @@ import (
     "fmt"
     "math"
     "os"
+    "time"
 )
 
 // Avoid self intersection (shadow acne) by offsetting the ray position.
@@ -93,6 +94,8 @@ func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
 
 
 func main() {
+    startTime := time.Now()
+
     // Image
     aspectRatio := 16.0 / 9.0
     imageWidth := 400
@@ -131,4 +134,7 @@ func main() {
         }
     }
     fmt.Fprintf(os.Stderr, "\nDone.\n")
+
+    renderDuration := time.Since(startTime)
+    fmt.Fprintf(os.Stderr, "Render time %v\n", renderDuration)
 }
