@@ -1,6 +1,7 @@
 package cgmath
 
 import (
+    "fmt"
     "math"
 )
 
@@ -24,6 +25,8 @@ func (h *HitRecord) SetFaceNormal(r *Ray, outwardNormal *Vec3) {
 
 type Hittable interface {
     Hit(r *Ray, tMin float64, tMax float64, h *HitRecord) bool
+    BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool
+    fmt.Stringer
 }
 
 type Sphere struct {
@@ -61,6 +64,18 @@ func (s *Sphere) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
     return true
 }
 
+func (s *Sphere) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = Aabb{
+        Minimum: *s.Center.Sub(&Vec3{s.Radius, s.Radius, s.Radius}),
+        Maximum: *s.Center.Add(&Vec3{s.Radius, s.Radius, s.Radius}),
+    }
+    return true
+}
+
+func (s *Sphere) String() string {
+    return fmt.Sprintf("Sphere(Radius=%02f, Center=%v)", s.Radius, s.Center)
+}
+
 type HittableList struct {
     objects []Hittable
 }
@@ -87,6 +102,34 @@ func (hl *HittableList) Hit(r *Ray, tMin float64, tMax float64, h *HitRecord) bo
     }
 
     return hitAnything
+}
+
+
+func (hl *HittableList) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    if len(hl.objects) == 0 {
+        return false
+    }
+
+    var tempBox Aabb
+    firstBox := true
+
+    for _, object := range hl.objects {
+        if !object.BoundingBox(time0, time1, &tempBox) {
+            return false
+        }
+        if firstBox {
+            *outputBox = tempBox
+            firstBox = false
+        } else {
+            outputBox = surroundingBox(outputBox, &tempBox)
+        }
+    }
+
+    return true
+}
+
+func (hl *HittableList) String() string {
+    return fmt.Sprintf("HittableList(objects=%v)", hl.objects)
 }
 
 type MovingSphere struct {
@@ -129,4 +172,21 @@ func (s *MovingSphere) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) b
     rec.SetFaceNormal(r, outwardNormal)
     rec.Material = s.Material
     return true
+}
+
+func (s *MovingSphere) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    box0 := Aabb{
+        Minimum: *s.Center0.Sub(&Vec3{s.Radius, s.Radius, s.Radius}),
+        Maximum: *s.Center0.Add(&Vec3{s.Radius, s.Radius, s.Radius}),
+    }
+    box1 := Aabb{
+        Minimum: *s.Center1.Sub(&Vec3{s.Radius, s.Radius, s.Radius}),
+        Maximum: *s.Center1.Add(&Vec3{s.Radius, s.Radius, s.Radius}),
+    }
+    *outputBox = *surroundingBox(&box0, &box1)
+    return true
+}
+
+func (s *MovingSphere) String() string {
+    return fmt.Sprintf("MovingSphere(Radius=%02f, Center0=%v, Center1=%v)", s.Radius, s.Center0, s.Center1)
 }

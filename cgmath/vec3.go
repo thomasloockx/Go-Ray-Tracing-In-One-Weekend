@@ -1,11 +1,16 @@
 package cgmath
 
 import (
+    "fmt"
     "math"
 )
 
 type Vec3 struct {
     X, Y, Z float64
+}
+
+func (v *Vec3) String() string {
+    return fmt.Sprintf("[%02f, %02f, %02f]", v.X, v.Y, v.Z)
 }
 
 func (v *Vec3) Negate() *Vec3 {

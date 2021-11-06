@@ -11,11 +11,11 @@ import (
 // Avoid self intersection (shadow acne) by offsetting the ray position.
 const RAY_EPSILON = 0.001
 
-func randomScene() cgm.HittableList {
-	world := cgm.HittableList{}
+func randomScene() []cgm.Hittable {
+    world := make([]cgm.Hittable, 0, 1000)
 
     groundMaterial := cgm.Lambertian{Albedo: cgm.Color{0.5, 0.5, 0.5}}
-    world.Add(&cgm.Sphere{cgm.Vec3{0, -1000, 0}, 1000, &groundMaterial})
+    world = append(world, &cgm.Sphere{cgm.Vec3{0, -1000, 0}, 1000, &groundMaterial})
 
     for a := -11; a < 11; a++ {
         for b := -11; b < 11; b++ {
@@ -38,31 +38,31 @@ func randomScene() cgm.HittableList {
                         Radius: 0.2,
                         Material: sphereMaterial,
                     }
-                    world.Add(sphere)
+                    world = append(world, sphere)
                 } else if chooseMat < 0.95 {
                     // metal
 					x := cgm.RandInRange(0.5, 1)
                     albedo := cgm.Color{x, x, x}
                     fuzz := cgm.RandInRange(0, 0.5)
                     sphereMaterial = &cgm.Metal{Albedo: albedo, Fuzz: fuzz}
-				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
+				    world = append(world, &cgm.Sphere{center, 0.2, sphereMaterial})
                 } else {
                     // glass
                     sphereMaterial = &cgm.Dielectric{RefractiveIndex: 1.5}
-				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
+				    world = append(world, &cgm.Sphere{center, 0.2, sphereMaterial})
                 }
             }
         }
     }
 
     material1 := cgm.Dielectric{RefractiveIndex: 1.5}
-    world.Add(&cgm.Sphere{cgm.Vec3{0, 1, 0}, 1.0, &material1})
+    world = append(world, &cgm.Sphere{cgm.Vec3{0, 1, 0}, 1.0, &material1})
 
     material2 := cgm.Lambertian{cgm.Color{0.4, 0.2, 0.1}}
-    world.Add(&cgm.Sphere{cgm.Vec3{-4, 1, 0}, 1.0, &material2})
+    world = append(world, &cgm.Sphere{cgm.Vec3{-4, 1, 0}, 1.0, &material2})
 
     material3 := cgm.Metal{cgm.Color{0.7, 0.6, 0.5}, 0.0}
-    world.Add(&cgm.Sphere{cgm.Vec3{4, 1, 0}, 1.0, &material3})
+    world = append(world, &cgm.Sphere{cgm.Vec3{4, 1, 0}, 1.0, &material3})
 
     return world
 }
@@ -105,6 +105,7 @@ func main() {
 
     // World
     world := randomScene()
+    bvh := cgm.MakeBvh(world, 0.0, 1.0)
 
     // Camera
     lookFrom := cgm.Vec3{X: 13, Y: 2, Z: 3}
@@ -128,7 +129,7 @@ func main() {
                 u := (float64(i) + cgm.Rand()) / float64(imageWidth - 1)
                 v := (float64(j) + cgm.Rand()) / float64(imageHeight - 1)
                 r := cam.MakeRay(u, v)
-                pixelColor.Accumulate(rayColor(&r, &world, maxDepth))
+                pixelColor.Accumulate(rayColor(&r, bvh, maxDepth))
             }
             cgm.WriteColor(os.Stdout, &pixelColor, samplesPerPixel)
         }

@@ -30,3 +30,7 @@ func Clamp(x, min, max float64) float64 {
     }
     return x
 }
+
+func RandInt(x, y int) int {
+    return int(RandInRange(float64(x), float64(y)))
+}
