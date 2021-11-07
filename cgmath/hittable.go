@@ -8,7 +8,7 @@ import (
 type HitRecord struct {
     P Vec3
     Normal Vec3
-    T float64
+    T, U, V float64
     FrontFace bool
     Material Material
 }
@@ -60,6 +60,7 @@ func (s *Sphere) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
     rec.P = *r.At(rec.T)
     outwardNormal := rec.P.Sub(&s.Center).Div(s.Radius)
     rec.SetFaceNormal(r, outwardNormal)
+    rec.U, rec.V = s.getUv(outwardNormal)
     rec.Material = s.Material
     return true
 }
@@ -74,6 +75,14 @@ func (s *Sphere) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool
 
 func (s *Sphere) String() string {
     return fmt.Sprintf("Sphere(Radius=%02f, Center=%v)", s.Radius, s.Center)
+}
+
+func (s *Sphere) getUv(p *Vec3) (float64, float64) {
+    theta := math.Acos(-p.Y)
+    phi := math.Atan2(p.Z, -p.X) + math.Pi
+    u := phi / (2 * math.Pi)
+    v := theta / math.Pi
+    return u, v
 }
 
 type HittableList struct {
@@ -121,7 +130,7 @@ func (hl *HittableList) BoundingBox(time0 float64, time1 float64, outputBox *Aab
             *outputBox = tempBox
             firstBox = false
         } else {
-            outputBox = surroundingBox(outputBox, &tempBox)
+            *outputBox = *surroundingBox(outputBox, &tempBox)
         }
     }
 

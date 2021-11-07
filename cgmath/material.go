@@ -9,7 +9,7 @@ type Material interface {
 }
 
 type Lambertian struct {
-    Albedo Color
+    Albedo Texture
 }
 
 func (mat *Lambertian) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, scattered *Ray) bool {
@@ -18,7 +18,7 @@ func (mat *Lambertian) Scatter(rayIn *Ray, rec *HitRecord, attenuation *Color, s
         scatterDir = &rec.Normal
     }
     *scattered = Ray{Orig: rec.P, Dir: *scatterDir, Time: rayIn.Time}
-    *attenuation = mat.Albedo
+    *attenuation = mat.Albedo.Value(rec.U, rec.V, &rec.P)
     return true
 }
 

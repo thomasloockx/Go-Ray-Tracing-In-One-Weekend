@@ -11,11 +11,17 @@ import (
 // Avoid self intersection (shadow acne) by offsetting the ray position.
 const RAY_EPSILON = 0.001
 
-func randomScene() []cgm.Hittable {
-    world := make([]cgm.Hittable, 0, 1000)
+func randomScene() cgm.Hittable {
+    world := &cgm.HittableList{}
 
-    groundMaterial := cgm.Lambertian{Albedo: cgm.Color{0.5, 0.5, 0.5}}
-    world = append(world, &cgm.Sphere{cgm.Vec3{0, -1000, 0}, 1000, &groundMaterial})
+    groundMaterial := cgm.Lambertian{Albedo: 
+        cgm.MakeCheckerTexture(
+            cgm.MakeSolidColor(0.2, 0.3, 0.1),
+            cgm.MakeSolidColor(0.9, 0.9, 0.9),
+        ),
+    }
+
+    world.Add(&cgm.Sphere{cgm.Vec3{0, -1000, 0}, 1000, &groundMaterial})
 
     for a := -11; a < 11; a++ {
         for b := -11; b < 11; b++ {
@@ -27,7 +33,7 @@ func randomScene() []cgm.Hittable {
 
                 if chooseMat < 0.8 {
                     // diffuse
-                    albedo := cgm.Color{R: cgm.Rand() * cgm.Rand(), G: cgm.Rand() * cgm.Rand(), B: cgm.Rand() * cgm.Rand()}
+                    albedo := cgm.MakeSolidColor(cgm.Rand() * cgm.Rand(), cgm.Rand() * cgm.Rand(), cgm.Rand() * cgm.Rand())
                     sphereMaterial = &cgm.Lambertian{Albedo: albedo}
                     center2 := center.Add(&cgm.Vec3{0.0, cgm.RandInRange(0, 0.5), 0})
                     sphere := &cgm.MovingSphere{
@@ -38,33 +44,46 @@ func randomScene() []cgm.Hittable {
                         Radius: 0.2,
                         Material: sphereMaterial,
                     }
-                    world = append(world, sphere)
+                    world.Add(sphere)
                 } else if chooseMat < 0.95 {
                     // metal
 					x := cgm.RandInRange(0.5, 1)
                     albedo := cgm.Color{x, x, x}
                     fuzz := cgm.RandInRange(0, 0.5)
                     sphereMaterial = &cgm.Metal{Albedo: albedo, Fuzz: fuzz}
-				    world = append(world, &cgm.Sphere{center, 0.2, sphereMaterial})
+				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
                 } else {
                     // glass
                     sphereMaterial = &cgm.Dielectric{RefractiveIndex: 1.5}
-				    world = append(world, &cgm.Sphere{center, 0.2, sphereMaterial})
+				    world.Add(&cgm.Sphere{center, 0.2, sphereMaterial})
                 }
             }
         }
     }
 
     material1 := cgm.Dielectric{RefractiveIndex: 1.5}
-    world = append(world, &cgm.Sphere{cgm.Vec3{0, 1, 0}, 1.0, &material1})
+    world.Add(&cgm.Sphere{cgm.Vec3{0, 1, 0}, 1.0, &material1})
 
-    material2 := cgm.Lambertian{cgm.Color{0.4, 0.2, 0.1}}
-    world = append(world, &cgm.Sphere{cgm.Vec3{-4, 1, 0}, 1.0, &material2})
+    material2 := cgm.Lambertian{cgm.MakeSolidColor(0.4, 0.2, 0.1)}
+    world.Add(&cgm.Sphere{cgm.Vec3{-4, 1, 0}, 1.0, &material2})
 
     material3 := cgm.Metal{cgm.Color{0.7, 0.6, 0.5}, 0.0}
-    world = append(world, &cgm.Sphere{cgm.Vec3{4, 1, 0}, 1.0, &material3})
+    world.Add(&cgm.Sphere{cgm.Vec3{4, 1, 0}, 1.0, &material3})
 
     return world
+}
+
+func twoSpheres() *cgm.HittableList {
+    checker := cgm.MakeCheckerTexture(
+        cgm.MakeSolidColor(0.2, 0.3, 0.1),
+        cgm.MakeSolidColor(0.9, 0.9, 0.9),
+    )
+
+    objects := &cgm.HittableList{}
+    objects.Add(&cgm.Sphere{cgm.Vec3{0, -10, 0}, 10, &cgm.Lambertian{checker}})
+    objects.Add(&cgm.Sphere{cgm.Vec3{0, 10, 0}, 10, &cgm.Lambertian{checker}})
+
+    return objects
 }
 
 func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
@@ -104,17 +123,31 @@ func main() {
     maxDepth := 50
 
     // World
-    world := randomScene()
-    bvh := cgm.MakeBvh(world, 0.0, 1.0)
+    var world cgm.Hittable
+    var lookFrom cgm.Vec3
+    var lookAt cgm.Vec3
+    vfov := 40.0
+    aperture := 0.0
 
-    // Camera
-    lookFrom := cgm.Vec3{X: 13, Y: 2, Z: 3}
-    lookAt := cgm.Vec3{X: 0, Y: 0, Z: -1}
+    scene := 1
+    switch scene {
+        case 0:
+            world = randomScene()
+            lookFrom = cgm.Vec3{13, 2, 3}
+            lookAt = cgm.Vec3{0, 0, 0}
+            vfov = 20.0
+            aperture = 0.1
+        case 1:
+            world = twoSpheres()
+            lookFrom = cgm.Vec3{X: 13, Y: 2, Z: 3}
+            lookAt = cgm.Vec3{X: 0, Y: 0, Z: 0}
+            vfov = 20.0
+    }
+
     vUp := cgm.Vec3{X: 0, Y: 1, Z: 0}
     distToFocus := 10.0
-    aperture := 0.1
-    fov := 20.0
-    cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, fov, aspectRatio, aperture, distToFocus, 0.0, 1.0)
+    cam := cgm.MakeCamera(&lookFrom, &lookAt, &vUp, vfov, aspectRatio, aperture, distToFocus, 0.0, 1.0)
+    bvh := cgm.MakeBvh([]cgm.Hittable{world}, 0.0, 1.0)
 
     // Render
     fmt.Printf("P3\n") 
