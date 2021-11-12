@@ -79,7 +79,7 @@ func (s *Sphere) String() string {
 
 func (s *Sphere) getUv(p *Vec3) (float64, float64) {
     theta := math.Acos(-p.Y)
-    phi := math.Atan2(p.Z, -p.X) + math.Pi
+    phi := math.Atan2(-p.Z, p.X) + math.Pi
     u := phi / (2 * math.Pi)
     v := theta / math.Pi
     return u, v

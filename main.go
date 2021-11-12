@@ -94,6 +94,14 @@ func twoPerlinSpheres() *cgm.HittableList {
     return objects
 }
 
+func earth() *cgm.HittableList {
+    earthTexture := cgm.MakeImageTexture("earthmap.jpg")
+    earthSuface := cgm.Lambertian{earthTexture}
+    objects := &cgm.HittableList{}
+    objects.Add(&cgm.Sphere{cgm.Vec3{0, 0, 0}, 2, &earthSuface})
+    return objects
+}
+
 func rayColor(r *cgm.Ray, world cgm.Hittable, depth int) *cgm.Color {
     // If we exceeded the ray bounce limit, no more light is gathered.
     if depth <= 0 {
@@ -137,7 +145,7 @@ func main() {
     vfov := 40.0
     aperture := 0.0
 
-    scene := 2
+    scene := 3
     switch scene {
         case 0:
             world = randomScene()
@@ -152,6 +160,11 @@ func main() {
             vfov = 20.0
         case 2:
             world = twoPerlinSpheres()
+            lookFrom = cgm.Vec3{13, 2, 3}
+            lookAt = cgm.Vec3{X: 0, Y: 0, Z: 0}
+            vfov = 20.0
+        case 3:
+            world = earth()
             lookFrom = cgm.Vec3{13, 2, 3}
             lookAt = cgm.Vec3{X: 0, Y: 0, Z: 0}
             vfov = 20.0
