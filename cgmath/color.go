@@ -18,6 +18,10 @@ func (c *Color) Lerp(d *Color, t float64) *Color {
     }
 }
 
+func (c *Color) Add(d *Color) *Color {
+    return &Color{c.R +  d.R, c.G + d.G, c.B + d.B}
+}
+
 func (c *Color) Scale(t float64) *Color {
     return &Color{c.R * t, c.G * t, c.B * t}
 }

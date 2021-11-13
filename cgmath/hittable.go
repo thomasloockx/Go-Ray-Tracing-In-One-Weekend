@@ -199,3 +199,139 @@ func (s *MovingSphere) BoundingBox(time0 float64, time1 float64, outputBox *Aabb
 func (s *MovingSphere) String() string {
     return fmt.Sprintf("MovingSphere(Radius=%02f, Center0=%v, Center1=%v)", s.Radius, s.Center0, s.Center1)
 }
+
+type XyRect struct {
+    X0, X1, Y0, Y1 float64
+    K float64
+    Material Material
+}
+
+func (rect *XyRect) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    t := (rect.K - r.Orig.Z) / r.Dir.Z
+    if t < tMin || t > tMax {
+        return false
+    }
+
+    x := r.Orig.X + t * r.Dir.X
+    if x < rect.X0 || x > rect.X1 {
+        return false
+    }
+
+    y := r.Orig.Y + t * r.Dir.Y
+    if y < rect.Y0 || y > rect.Y1 {
+        return false
+    }
+
+    rec.U = (x - rect.X0) / (rect.X1 - rect.X0)
+    rec.V = (y - rect.Y0) / (rect.Y1 - rect.Y0)
+    rec.T = t
+    rec.SetFaceNormal(r, &Vec3{0, 0, 1})
+    rec.Material = rect.Material
+    rec.P = *r.At(t)
+
+    return true
+}
+
+
+
+func (r *XyRect) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = Aabb{
+        Minimum: Vec3{r.X0, r.Y0, r.K - 0.0001},
+        Maximum: Vec3{r.X1, r.Y1, r.K + 0.0001},
+    }
+    return true
+}
+
+func (rect *XyRect) String() string {
+    return fmt.Sprintf("XyRect(x=[%02f, %02f], y=[%02f, %02f], k=%02f)", rect.X0, rect.X1, rect.Y0, rect.Y1, rect.K)
+}
+
+type XzRect struct {
+    X0, X1, Z0, Z1 float64
+    K float64
+    Material Material
+}
+
+func (rect *XzRect) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    t := (rect.K - r.Orig.Y) / r.Dir.Y
+    if t < tMin || t > tMax {
+        return false
+    }
+
+    x := r.Orig.X + t * r.Dir.X
+    if x < rect.X0 || x > rect.X1 {
+        return false
+    }
+
+    z := r.Orig.Z + t * r.Dir.Z
+    if z < rect.Z0 || z > rect.Z1 {
+        return false
+    }
+
+    rec.U = (x - rect.X0) / (rect.X1 - rect.X0)
+    rec.V = (z - rect.Z0) / (rect.Z1 - rect.Z0)
+    rec.T = t
+    rec.SetFaceNormal(r, &Vec3{0, 1, 0})
+    rec.Material = rect.Material
+    rec.P = *r.At(t)
+
+    return true
+}
+
+func (r *XzRect) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = Aabb{
+        Minimum: Vec3{r.X0, r.K - 0.0001, r.Z0},
+        Maximum: Vec3{r.X1, r.K + 0.0001, r.Z1},
+    }
+    return true
+}
+
+func (rect *XzRect) String() string {
+    return fmt.Sprintf("XzRect(x=[%02f, %02f], z=[%02f, %02f], k=%02f)", rect.X0, rect.X1, rect.Z0, rect.Z1, rect.K)
+}
+
+type YzRect struct {
+    Y0, Y1, Z0, Z1 float64
+    K float64
+    Material Material
+}
+
+func (rect *YzRect) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    t := (rect.K - r.Orig.X) / r.Dir.X
+    if t < tMin || t > tMax {
+        return false
+    }
+
+    z := r.Orig.Z + t * r.Dir.Z
+    if z < rect.Z0 || z > rect.Z1 {
+        return false
+    }
+
+    y := r.Orig.Y + t * r.Dir.Y
+    if y < rect.Y0 || y > rect.Y1 {
+        return false
+    }
+
+    rec.U = (y - rect.Y0) / (rect.Y1 - rect.Y0)
+    rec.V = (z - rect.Z0) / (rect.Z1 - rect.Z0)
+    rec.T = t
+    rec.SetFaceNormal(r, &Vec3{1, 0, 0})
+    rec.Material = rect.Material
+    rec.P = *r.At(t)
+
+    return true
+}
+
+
+
+func (r *YzRect) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = Aabb{
+        Minimum: Vec3{r.K - 0.0001, r.Y0, r.Z0},
+        Maximum: Vec3{r.K + 0.0001, r.Y1, r.Z1},
+    }
+    return true
+}
+
+func (rect *YzRect) String() string {
+    return fmt.Sprintf("YzRect(y=[%02f, %02f], z=[%02f, %02f], k=%02f)", rect.Y0, rect.Y1, rect.Z0, rect.Z1, rect.K)
+}
