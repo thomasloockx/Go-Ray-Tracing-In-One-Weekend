@@ -322,8 +322,6 @@ func (rect *YzRect) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool
     return true
 }
 
-
-
 func (r *YzRect) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
     *outputBox = Aabb{
         Minimum: Vec3{r.K - 0.0001, r.Y0, r.Z0},
@@ -334,4 +332,172 @@ func (r *YzRect) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool
 
 func (rect *YzRect) String() string {
     return fmt.Sprintf("YzRect(y=[%02f, %02f], z=[%02f, %02f], k=%02f)", rect.Y0, rect.Y1, rect.Z0, rect.Z1, rect.K)
+}
+
+type Box struct {
+    min, max Vec3
+    sides HittableList
+}
+
+func MakeBox(p0 *Vec3, p1 *Vec3, material Material) *Box {
+    b := &Box{
+        min: *p0,
+        max: *p1,
+    }
+
+    b.sides.Add(&XyRect{p0.X, p1.X, p0.Y, p1.Y, p1.Z, material})
+    b.sides.Add(&XyRect{p0.X, p1.X, p0.Y, p1.Y, p0.Z, material})
+
+    b.sides.Add(&XzRect{p0.X, p1.X, p0.Z, p1.Z, p1.Y, material})
+    b.sides.Add(&XzRect{p0.X, p1.X, p0.Z, p1.Z, p0.Y, material})
+
+    b.sides.Add(&YzRect{p0.Y, p1.Y, p0.Z, p1.Z, p1.X, material})
+    b.sides.Add(&YzRect{p0.Y, p1.Y, p0.Z, p1.Z, p0.X, material})
+
+    return b
+}
+
+func (b *Box) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    return b.sides.Hit(r, tMin, tMax, rec)    
+}
+
+func (b *Box) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = Aabb{Minimum: b.min, Maximum: b.max}
+    return true
+}
+
+func (b *Box) String() string {
+    return fmt.Sprintf("Box(min=%v, z=%v)", b.min, b.max)
+}
+
+type Translate struct {
+    h Hittable
+    displacement Vec3
+}
+
+func MakeTranslate(h Hittable, displacement Vec3) *Translate {
+    return &Translate{
+        h: h,
+        displacement: displacement,
+    }
+}
+
+func (t *Translate) Hit(r *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    moved := &Ray{
+        Orig: *r.Orig.Sub(&t.displacement),
+        Dir: r.Dir,
+        Time: r.Time,
+    }
+
+    if !t.h.Hit(moved, tMin, tMax, rec) {
+        return false
+    }
+
+    rec.P = *rec.P.Add(&t.displacement)
+    rec.SetFaceNormal(moved, &rec.Normal)
+
+    return true
+}
+
+func (t *Translate) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    if !t.h.BoundingBox(time0, time1, outputBox) {
+        return false
+    }
+
+    *outputBox = Aabb{
+        Minimum: *outputBox.Minimum.Add(&t.displacement),
+        Maximum: *outputBox.Maximum.Add(&t.displacement),
+    }
+
+    return true
+}
+
+func (t *Translate) String() string {
+    return fmt.Sprintf("Translate(displacement=%v, h=%v)", t.displacement, t.h)
+}
+
+type RotateY struct {
+   h Hittable 
+   sinTheta, cosTheta float64
+   box Aabb
+   hasBox bool
+}
+
+func MakeRotateY(h Hittable, angle float64) *RotateY {
+    r := &RotateY{}
+    r.h = h
+    radians := DegToRad(angle)
+    r.sinTheta = math.Sin(radians)
+    r.cosTheta = math.Cos(radians)
+    r.hasBox = h.BoundingBox(0, 1, &r.box)
+
+    min := Vec3{math.Inf(1), math.Inf(1), math.Inf(1)}
+    max := Vec3{math.Inf(-1), math.Inf(-1), math.Inf(-1)}
+
+    for i:=0; i<2; i++ {
+        for j:=0; j<2; j++ {
+            for k:=0; k<2; k++ {
+                x := float64(i) * r.box.Maximum.X + (1 - float64(i)) * r.box.Minimum.X
+                y := float64(j) * r.box.Maximum.Y + (1 - float64(j)) * r.box.Minimum.Y
+                z := float64(k) * r.box.Maximum.Z + (1 - float64(k)) * r.box.Minimum.Z
+
+                newx := r.cosTheta * x + r.sinTheta * z
+                newz := -r.sinTheta * x + r.cosTheta * z
+
+                tester := Vec3{newx, y, newz}
+                min.X = math.Min(min.X, tester.X)
+                max.X = math.Max(max.X, tester.X)
+
+                min.Y = math.Min(min.Y, tester.Y)
+                max.Y = math.Max(max.Y, tester.Y)
+
+                min.Z = math.Min(min.Z, tester.Z)
+                max.Z = math.Max(max.Z, tester.Z)
+            }
+        }
+    }
+
+    r.box = Aabb{Minimum: min, Maximum: max}
+    return r
+}
+
+
+func (r *RotateY) Hit(ray *Ray, tMin float64, tMax float64, rec *HitRecord) bool {
+    origin := ray.Orig
+    direction := ray.Dir
+
+    origin.X = r.cosTheta * ray.Orig.X - r.sinTheta * ray.Orig.Z
+    origin.Z = r.sinTheta * ray.Orig.X + r.cosTheta * ray.Orig.Z
+
+    direction.X = r.cosTheta * ray.Dir.X - r.sinTheta * ray.Dir.Z
+    direction.Z = r.sinTheta * ray.Dir.X + r.cosTheta * ray.Dir.Z
+
+    rotated := Ray{origin, direction, ray.Time}
+
+    if !r.h.Hit(&rotated, tMin, tMax, rec) {
+        return false
+    }
+
+    p := rec.P
+    normal := rec.Normal
+
+    p.X = r.cosTheta * rec.P.X - r.sinTheta * rec.P.Z
+    p.Z = -r.sinTheta * rec.P.X + r.cosTheta * rec.P.Z
+
+    normal.X = r.cosTheta * rec.Normal.X + r.sinTheta * rec.Normal.Z
+    normal.Z = -r.sinTheta * rec.Normal.X + r.cosTheta * rec.Normal.Z
+
+    rec.P = p
+    rec.SetFaceNormal(&rotated, &normal)
+
+    return true
+}
+
+func (r *RotateY) BoundingBox(time0 float64, time1 float64, outputBox *Aabb) bool {
+    *outputBox = r.box
+    return r.hasBox
+}
+
+func (r *RotateY) String() string {
+    return fmt.Sprintf("RotateY(h=%v)", r.h)
 }

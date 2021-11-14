@@ -126,6 +126,14 @@ func cornellBox() *cgm.HittableList {
     objects.Add(&cgm.XzRect{0, 555, 0, 555, 0, white})
     objects.Add(&cgm.XzRect{0, 555, 0, 555, 555, white})
     objects.Add(&cgm.XyRect{0, 555, 0, 555, 555, white})
+    var box1 cgm.Hittable
+    box1 = cgm.MakeBox(&cgm.Vec3{0, 0, 0}, &cgm.Vec3{165, 330, 165}, white)
+    box1 = cgm.MakeTranslate(cgm.MakeRotateY(box1, 15), cgm.Vec3{265, 0, 295})
+    objects.Add(box1)
+    var box2 cgm.Hittable
+    box2 = cgm.MakeBox(&cgm.Vec3{0, 0, 0}, &cgm.Vec3{165, 165, 165}, white)
+    box2 = cgm.MakeTranslate(cgm.MakeRotateY(box2, -18), cgm.Vec3{130, 0, 65})
+    objects.Add(box2)
     return objects
 }
 
@@ -205,7 +213,7 @@ func main() {
             world = cornellBox()
             aspectRatio = 1.0
             imageWidth = 600
-            samplesPerPixel = 400
+            samplesPerPixel = 200
             background = cgm.Color{0, 0, 0}
             lookFrom = cgm.Vec3{278, 278, -800}
             lookAt = cgm.Vec3{278, 278, 0}
